@@ -1,0 +1,49 @@
+name: Release
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  release:
+    runs-on: ubuntu-latest
+    name: Release
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          semantic_version: 24.2.2
+          branch: main
+          extra_plugins: |
+            @semantic-release/exec@6.0.3
+            @semantic-release/changelog@6.0.1
+            @semantic-release/git@10.0.1
+            conventional-changelog-conventionalcommits@6.1.0
+            semantic-release-major-tag@0.3.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.USER_GITHUB_TOKEN }}
+      - name: Do something when a new release published
+        if: steps.semantic.outputs.new_release_published == 'true'
+        run: |
+          echo ${{ steps.semantic.outputs.new_release_version }}
+          echo ${{ steps.semantic.outputs.new_release_major_version }}
+          echo ${{ steps.semantic.outputs.new_release_minor_version }}
+          echo ${{ steps.semantic.outputs.new_release_patch_version }}
